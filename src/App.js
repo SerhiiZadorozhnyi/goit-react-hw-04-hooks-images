@@ -1,111 +1,93 @@
-import React, { Component } from 'react';
-import api from './components/services/galleryApi';
+import { useState, useEffect } from 'react';
+import imageApi from './components/services/galleryApi';
 import Button from 'components/Button/Button';
-import Container from 'components/Container/Container';
 import ImageGallery from 'components/ImageGallery/ImageGallery';
 import Modal from 'components/Modal/Modal';
-import MyLoader from 'components/Loader/Loader';
-import Notification from 'components/Notification/Notification';
+import ModalImage from 'components/ModalImage/ModalImage';
+import Loader from 'components/Loader/Loader';
 import Searchbar from 'components/Searchbar/Searchbar';
 
-class App extends Component {
-  state = {
-    page: 1,
-    query: '',
-    images: [],
-    error: '',
-    loader: false,
-    showModal: false,
-    url: '',
-    tag: '',
+
+function App() {
+  const [images, setImages] = useState([]);
+  const [largeImageURL, setLargeImageURL] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+
+  const onSubmitForm = query => {
+    setKeyword(query);
+    setPage(1);
+    setImages([]);
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query } = this.state;
-    if (query !== prevState.query) {
-      this.fetchImages()
-        // eslint-disable-next-line
-        .catch(error => this.setState({ error }))
-        .finally(() => this.setState({ loader: false }));
-    }
-  }
-
-  componentDidCatch(error) {
-    this.setState({ error });
-  }
-
-  fetchImages = () => {
-    const { query, page } = this.state;
-    this.setState({ loader: true });
-    return api.findImage(query, page).then((images) => {
-      this.setState((prevState) => ({
-        images: [...prevState.images, ...images],
-        page: prevState.page + 1,
-        error: '',
-      }));
-    });
+  const hideLargeImage = () => {
+    setLargeImageURL(null);
   };
 
-  handleOnButtonClick = () => {
-    this.fetchImages()
-      .then(() =>
-        // eslint-disable-next-line
-        window.scrollTo({
-          // eslint-disable-next-line
-          top: document.documentElement.scrollHeight,
-          behavior: 'smooth',
-        }))
-      .catch((error) => this.setState({ error }))
-      .finally(() => this.setState({ loader: false }));
-  };
-
-  handleFormData = ({ query }) => {
-    this.setState({
-      page: 1,
-      query,
-      images: [],
-      error: '',
-    });
-  };
-
-  handleImageClick = ({ target }) => {
-    if (target.nodeName !== 'IMG') {
+  useEffect(() => {
+    if (!keyword) {
       return;
     }
-    const { url } = target.dataset;
-    const tag = target.alt;
-    this.setState({
-      url,
-      tag,
-      loader: true,
-    });
-    this.toggleModal();
+
+    fetchImage();
+    // eslint-disable-next-line
+  }, [keyword]);
+
+  useEffect(() => {
+    if (page > 2) {
+      scrollDown();
+    }
+  }, [page]);
+
+  const isLastPage = data => {
+    const perPageImages = 12;
+    const totalHits = data.totalHits - perPageImages;
+    if (totalHits <= 0) {
+      setLastPage(true);
+    } else {
+      setLastPage(false);
+    }
   };
 
-  toggleModal = () => this.setState((prevState) => ({ showModal: !prevState.showModal }));
+  const scrollDown = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
 
-  hideLoaderInModal = () => this.setState({ loader: false });
-
-  render() {
-    const {
- images, error, loader, showModal, url, tag, 
-} = this.state;
-    return (
-      <Container>
-        {showModal && (
-          <Modal onClose={this.toggleModal} onClick={this.handleImageClick}>
-            {loader && <MyLoader />}
-            <img src={url} alt={tag} onLoad={this.hideLoaderInModal} />
-          </Modal>
-        )}
-        <Searchbar onSubmit={this.handleFormData} />
-        {error && <Notification message="Something wrong :(" />}
-        <ImageGallery images={images} onClick={this.handleImageClick} />
-        {loader && !showModal && <MyLoader />}
-        {!loader && images[0] && <Button onClick={this.handleOnButtonClick} />}
-      </Container>
-    );
+  function fetchImage() {
+    setLoading(true);
+    imageApi(keyword, page)
+      .then(data => {
+        setImages(images => [...images, ...data]);
+        setPage(page => page + 1);
+        isLastPage(data);
+      })
+      .catch(error => setError(error))
+      .finally(() => setLoading(false));
   }
+  return (
+    <>
+      <Searchbar onSubmitForm={onSubmitForm} />
+      {images.length > 0 && (
+        <ImageGallery images={images} onImageClick={setLargeImageURL} />
+      )}
+      {largeImageURL && (
+        <Modal onCloseModal={hideLargeImage}>
+          <ModalImage largeImage={largeImageURL} />
+        </Modal>
+      )}
+      {images.length > 0 && !lastPage && !loading && (
+        <Button text="Load more" buttonAction={fetchImage} />
+      )}
+      {loading && <Loader />}
+      {error && <p>ERROR</p>}
+    </>
+  );
 }
 
 export default App;

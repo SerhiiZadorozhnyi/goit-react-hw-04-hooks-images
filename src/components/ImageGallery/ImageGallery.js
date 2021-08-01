@@ -3,25 +3,34 @@ import PropTypes from 'prop-types';
 import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
 import styles from './ImageGallery.module.css';
 
-const ImageGallery = ({ images, onClick }) => (
-    // eslint-disable-next-line
-    <ul className={styles.ImageGallery} onClick={onClick}>
-      {images.map(({
-   id, webformatURL, tags, largeImageURL, 
-  }) => (
-        <ImageGalleryItem
-          key={id}
-          webformatURL={webformatURL}
-          tags={tags}
-          largeImageURL={largeImageURL}
-        />
+function ImageGallery({ images, onImageClick }) {
+  return (
+    <ul className={styles.gallery}>
+      {images.map(image => (
+        <li key={image.id} className={styles.item}>
+          <ImageGalleryItem
+            webformatURL={image.webformatURL}
+            alt={image.tags}
+            largeImageURL={image.largeImageURL}
+            id={image.id}
+            onImageClick={onImageClick}
+          />
+        </li>
       ))}
     </ul>
   );
-  
-  ImageGallery.propTypes = {
-    images: PropTypes.arrayOf(PropTypes.shape).isRequired,
-    onClick: PropTypes.func.isRequired,
-  };
-  
-  export default ImageGallery;
+}
+
+ImageGallery.propTypes = {
+  images: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      webformatURL: PropTypes.string.isRequired,
+      largeImageURL: PropTypes.string.isRequired,
+      tags: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  onImageClick: PropTypes.func.isRequired,
+};
+
+export default ImageGallery;
