@@ -1,36 +1,30 @@
+import React from 'react';
 import PropTypes from 'prop-types';
-import styles from './ImageGalleryItem.module.css';
+import s from './ImageGalleryItem.module.css';
+import defaultImg from '../imagesDef/default-img.jpg';
 
-function ImageGalleryItem({
-  webformatURL,
-  alt,
-  largeImageURL,
-  id,
-  onImageClick,
-}) {
-  const getlargeImageURL = e => {
-    onImageClick({
-      url: e.target.dataset.largeimageurl,
-      alt: e.target.alt,
-    });
-  };
-  return (
-    <img
-      src={webformatURL}
-      alt={alt}
-      className={styles.image}
-      data-largeimageurl={largeImageURL}
-      data-id={id}
-      onClick={getlargeImageURL}
-    />
-  );
+
+const ImageGalleryItem = ({ imgItem, onSelect}) => {
+    return (
+    <li className={s.imageGalleryItem} key={imgItem.id} onClick={() => onSelect(imgItem)} > 
+        <img src={imgItem.webformatURL} alt={imgItem.tags} className={s.ImageGalleryItemimage} />
+    </li>
+    )
 }
 
-ImageGalleryItem.propTypes = {
-  webformatURL: PropTypes.string,
-  alt: PropTypes.string.isRequired,
-  largeImageURL: PropTypes.string.isRequired,
-  id: PropTypes.number.isRequired,
-};
+ImageGalleryItem.defaultProps = {
+    tags: " Тут би мали бути фотка...",
+    webformatURL: defaultImg,
+     largeImageURL: defaultImg
+}
+
+ImageGalleryItem.prototype = {
+    imgItem: PropTypes.objectOf({
+        largeImageURL:PropTypes.string,
+        webformatURL: PropTypes.string,
+        tags: PropTypes.string,
+        id: PropTypes.string.isRequired,
+    }),
+}
 
 export default ImageGalleryItem;

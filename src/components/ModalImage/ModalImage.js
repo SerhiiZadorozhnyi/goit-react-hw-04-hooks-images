@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+
 function ModalImage({ largeImage }) {
   const { alt, url } = largeImage;
   return <img src={url} alt={alt} />;

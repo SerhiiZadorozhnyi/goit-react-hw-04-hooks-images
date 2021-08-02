@@ -1,92 +1,120 @@
-import { useState, useEffect } from 'react';
-import imageApi from './components/services/galleryApi';
+import React, { useState, useEffect } from 'react';
+import Container from 'components/Container/Container';
+import SearchBar from 'components/SearchBar/SearchBar';
+import ImageGallery from './components/ImageGallery/ImageGallery'
 import Button from 'components/Button/Button';
-import ImageGallery from 'components/ImageGallery/ImageGallery';
-import Modal from 'components/Modal/Modal';
-import ModalImage from 'components/ModalImage/ModalImage';
-import Loader from 'components/Loader/Loader';
-import Searchbar from 'components/Searchbar/Searchbar';
-
+import Modal from './components/Modal/Modal';
+import Loader from "react-loader-spinner";
+import s from './App.module.css';
+import { fetchCountries } from './components/Api/api'
 
 function App() {
-  const [images, setImages] = useState([]);
-  const [largeImageURL, setLargeImageURL] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const [imgGallery, setImgGallery] = useState([]);
+  const [imgName, setImgName] = useState('');
+  const [pageNum, setPageNum] = useState(1);
+  const [selectedObg, setSelectedObg] = useState(null);
+  const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
-  const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
 
-  const onSubmitForm = query => {
-    setKeyword(query);
-    setPage(1);
-    setImages([]);
-  };
-
-  const hideLargeImage = () => {
-    setLargeImageURL(null);
-  };
 
   useEffect(() => {
-    if (!keyword) {
-      return;
+    if (status === 'pending')
+    {
+      try
+      {
+        const getImg = async () => {
+          const response = await fetchCountries(imgName, pageNum);
+
+          if (response.length === 0)
+          {
+            setStatus('reject')
+            alert(`Sorry, we did not find such pictures ${ imgName }`)
+
+          } else
+          {
+            setStatus('resolved')
+          };
+          return response;
+        }
+        getImg()
+          .then(NewImgGallery =>
+            setImgGallery(prevState =>
+              [...prevState, ...NewImgGallery])
+          )
+      } catch {
+        alert(`Pixabay is dead`)
+        setStatus('error');
+        setError('error')
+      }
     }
 
-    fetchImage();
-    // eslint-disable-next-line
-  }, [keyword]);
+  }, [pageNum, imgName]);
 
   useEffect(() => {
-    if (page > 2) {
-      scrollDown();
-    }
-  }, [page]);
-
-  const isLastPage = data => {
-    const perPageImages = 12;
-    const totalHits = data.totalHits - perPageImages;
-    if (totalHits <= 0) {
-      setLastPage(true);
-    } else {
-      setLastPage(false);
-    }
-  };
-
-  const scrollDown = () => {
     window.scrollTo({
       top: document.documentElement.scrollHeight,
       behavior: 'smooth',
     });
+  }, [imgGallery])
+
+  function searchBarInputValueHandler(InputValue) {
+    if (InputValue.trim() !== '')
+    {
+      setImgName(InputValue);
+      setStatus("pending");
+
+    }
+    if (imgName !== InputValue)
+    {
+      setImgGallery([]);
+      setPageNum(1);
+    }
   };
 
-  function fetchImage() {
-    setLoading(true);
-    imageApi(keyword, page)
-      .then(data => {
-        setImages(images => [...images, ...data]);
-        setPage(page => page + 1);
-        isLastPage(data);
-      })
-      .catch(error => setError(error))
-      .finally(() => setLoading(false));
+  function loadMoreBtnHandler() {
+    setPageNum(prevPagenum => prevPagenum + 1);
+    setStatus("pending")
+  };
+
+  function handleSelectObg(obg) {
+    setSelectedObg(obg);
   }
+
+  function toggleMdl(evt) {
+    setSelectedObg(null);
+
+  };
+
   return (
-    <>
-      <Searchbar onSubmitForm={onSubmitForm} />
-      {images.length > 0 && (
-        <ImageGallery images={images} onImageClick={setLargeImageURL} />
-      )}
-      {largeImageURL && (
-        <Modal onCloseModal={hideLargeImage}>
-          <ModalImage largeImage={largeImageURL} />
-        </Modal>
-      )}
-      {images.length > 0 && !lastPage && !loading && (
-        <Button text="Load more" buttonAction={fetchImage} />
-      )}
-      {loading && <Loader />}
-      {error && <p>ERROR</p>}
-    </>
+    <Container>
+      <SearchBar onSubmit={searchBarInputValueHandler} />
+      <ImageGallery
+        imgArr={imgGallery}
+        onSelect={handleSelectObg}
+      >
+      </ImageGallery>
+      {status === 'resolved' && <Button onLoadMore={loadMoreBtnHandler} />}
+
+      {selectedObg && <Modal onClose={toggleMdl} >
+        <img src={selectedObg?.largeImageURL} alt={selectedObg?.tags} />
+        <button
+          type='button'
+          onClick={toggleMdl}
+        >Close</button>
+      </Modal>}
+
+      {status === 'pending' &&
+        <div className={s.loader}>
+          <Loader
+            type="Puff"
+            color="#a2cce3"
+            height={400}
+            width={400}
+          />
+          <p className={s.p}>Loading...</p>
+        </div>}
+    </Container>
   );
 }
 

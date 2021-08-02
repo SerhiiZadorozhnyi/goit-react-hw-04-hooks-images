@@ -1,36 +1,25 @@
 import React from 'react';
+import s from './ImageGallery.module.css';
 import PropTypes from 'prop-types';
-import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
-import styles from './ImageGallery.module.css';
+import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
 
-function ImageGallery({ images, onImageClick }) {
-  return (
-    <ul className={styles.gallery}>
-      {images.map(image => (
-        <li key={image.id} className={styles.item}>
-          <ImageGalleryItem
-            webformatURL={image.webformatURL}
-            alt={image.tags}
-            largeImageURL={image.largeImageURL}
-            id={image.id}
-            onImageClick={onImageClick}
-          />
-        </li>
-      ))}
-    </ul>
-  );
+
+function ImageGallery({ imgArr, onSelect }) {
+    return (
+        <ul className={s.imageGallary}>
+
+            {imgArr.map((imgItem) =>
+                <ImageGalleryItem
+                    key={imgItem.id}
+                    imgItem={imgItem}
+                    onSelect={() => onSelect(imgItem)}
+                />
+            )}
+        </ul >
+    )
 }
 
-ImageGallery.propTypes = {
-  images: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      webformatURL: PropTypes.string.isRequired,
-      largeImageURL: PropTypes.string.isRequired,
-      tags: PropTypes.string.isRequired,
-    }),
-  ).isRequired,
-  onImageClick: PropTypes.func.isRequired,
-};
-
+ImageGallery.prototype = {
+    imgArr: PropTypes.arrayOf(PropTypes.object).isRequired,
+}
 export default ImageGallery;
